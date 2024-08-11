@@ -1,33 +1,79 @@
 import pandas as pd
-import numpy as np
+import seaborn as sns
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neural_network import MLPRegressor
-from sklearn.metrics import r2_score, accuracy_score
+from sklearn.metrics import r2_score
 from sklearn.preprocessing import MinMaxScaler
 
 # Data transformation and loading
-transformer = MinMaxScaler()
+
+
+# Function that classify the tempo colum according to the normal tempo ranges
+def tempoClassifier(x):
+    if (x <= 40):
+        x = 1  # Largo
+    elif (x <= 66):
+        x = 2  # Lento
+    elif (x <= 76):
+        x = 3  # Adagio
+    elif (x <= 108):
+        x = 4  # Andante
+    elif (x <= 120):
+        x = 5  # Moderato
+    elif (x <= 168):
+        x = 6  # Allegro
+    else:
+        x = 7  # Presto
+    return x
+
+
 dataMusic = pd.read_csv('./music_genre.csv')
 dataMusic = dataMusic.dropna()
-dataMusic = dataMusic.drop(
-    dataMusic[(dataMusic['duration_ms'] <= 0)].index)
+
+# Drop rows with duration values lees or equal to 0
+dataMusic = dataMusic.drop(dataMusic[(dataMusic['duration_ms'] <= 0)].index)
+
+# Drop rows with tempo values equals to ?
+dataMusic = dataMusic.drop(dataMusic[(dataMusic['tempo'] == '?')].index)
+
+# Change the type of tempo column
+dataMusic['tempo'] = dataMusic['tempo'].astype('float64')
+
+# Drop rows with tempo values lees or equal to 0
+dataMusic = dataMusic.drop(dataMusic[(dataMusic['tempo'] <= 0)].index)
 
 inlets = dataMusic[['acousticness', 'duration_ms',
-                    'danceability', 'energy', 'instrumentalness', 'loudness', 'music_genre']]
+                    'danceability', 'energy', 'instrumentalness', 'loudness', 'music_genre', 'speechiness', 'valence', 'tempo', 'liveness']]
+
+# Diccionary to change the music_genere value from string to integer
 genres = {'Electronic': 1, 'Anime': 2, 'Jazz': 3, 'Alternative': 4,
           'Country': 5, 'Rap': 6, 'Blues': 7, 'Rock': 8, 'Classical': 9, 'Hip-Hop': 10}
 inlets['music_genre'] = inlets['music_genre'].map(genres)
+
+# Classification of the tempo column
+inlets['tempo'] = inlets['tempo'].apply(
+    lambda x: tempoClassifier(x))
+
+# Normalisation of the inlets data
+transformer = MinMaxScaler()
 inlets = transformer.fit_transform(inlets)
 inlets = pd.DataFrame(inlets, columns=['acousticness', 'duration_ms',
-                                       'danceability', 'energy', 'instrumentalness', 'loudness', 'music_genre'])
+                                       'danceability', 'energy', 'instrumentalness', 'loudness', 'music_genre', 'speechiness', 'valence', 'tempo', 'liveness'])
 
 oulets = dataMusic['popularity']
 
 x_train, x_test, y_train, y_test = train_test_split(
     inlets, oulets, test_size=0.2, random_state=42)
+
+# Correlation Matrix
+corr_df = inlets.corr(method="pearson")
+print(corr_df)
+plt.figure(figsize=(8, 6))
+sns.heatmap(corr_df, annot=True)
+plt.show()
 
 # Linear Regression model
 linearModel = LinearRegression()
@@ -48,23 +94,13 @@ yPredRandomForest = randomForestModel.predict(x_test)
 yPredNeuralNetwork = neuralNetworkModel.predict(x_test)
 
 # Calculation of the Coefficient of Determination (R Squared) for all the models
-# yPredLinear = pd.DataFrame(yPredLinear)
-y_test = y_train.reset_index().values()
-print(y_test)
-print(yPredLinear)
-r2Linear = accuracy_score(y_test, yPredLinear) * 100
-r2RandomForest = accuracy_score(y_test, yPredRandomForest) * 100
-r2NeuralNetwork = accuracy_score(y_test, yPredNeuralNetwork) * 100
-
-# Accuracy
-# accuracyLinear = accuracy_score(y_test, yPredLinear)
-# accuracyRandomForest = accuracy_score(y_test, yPredRandomForest)
-# accuracyNeuralNetworw = accuracy_score(y_test, yPredNeuralNetwork)
+r2Linear = r2_score(y_test, yPredLinear) * 100
+r2RandomForest = r2_score(y_test, yPredRandomForest) * 100
+r2NeuralNetwork = r2_score(y_test, yPredNeuralNetwork) * 100
 
 # Create Bar Graphics in order to evaluate the accuracy of the models
 models = ['Linear Regression', 'Random Forest', 'Neural Network']
 r2Scores = [r2Linear, r2RandomForest, r2NeuralNetwork]
-# accuracyScores = [accuracyLinear, accuracyRandomForest, accuracyNeuralNetworw]
 
 # R Squared and MSE Graphic
 plt.figure(figsize=(10, 6))
