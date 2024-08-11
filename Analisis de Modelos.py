@@ -69,8 +69,9 @@ x_train, x_test, y_train, y_test = train_test_split(
     inlets, oulets, test_size=0.2, random_state=42)
 
 # Correlation Matrix
-corr_df = inlets.corr(method="pearson")
-print(corr_df)
+modelValues = inlets
+modelValues['popularity'] = oulets
+corr_df = modelValues.corr(method="pearson")
 plt.figure(figsize=(8, 6))
 sns.heatmap(corr_df, annot=True)
 plt.show()
@@ -94,9 +95,9 @@ yPredRandomForest = randomForestModel.predict(x_test)
 yPredNeuralNetwork = neuralNetworkModel.predict(x_test)
 
 # Calculation of the Coefficient of Determination (R Squared) for all the models
-r2Linear = r2_score(y_test, yPredLinear) * 100
-r2RandomForest = r2_score(y_test, yPredRandomForest) * 100
-r2NeuralNetwork = r2_score(y_test, yPredNeuralNetwork) * 100
+r2Linear = r2_score(y_test, yPredLinear)
+r2RandomForest = r2_score(y_test, yPredRandomForest)
+r2NeuralNetwork = r2_score(y_test, yPredNeuralNetwork)
 
 # Create Bar Graphics in order to evaluate the accuracy of the models
 models = ['Linear Regression', 'Random Forest', 'Neural Network']
@@ -107,11 +108,10 @@ plt.figure(figsize=(10, 6))
 bars = plt.bar(models, r2Scores, color='red', alpha=0.7)
 for bar, r2 in zip(bars, r2Scores):
     plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() +
-             0.005, f'{r2:.2f}%', ha='center', color='black')
+             0.005, f'{r2:.3f}', ha='center', color='black')
 
 plt.title('Accuracy and Error of the models')
 plt.xlabel('Model')
 plt.ylabel('Value')
 plt.legend('R_Squared')
-
 plt.show()
