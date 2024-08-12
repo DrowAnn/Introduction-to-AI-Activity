@@ -69,11 +69,17 @@ x_train, x_test, y_train, y_test = train_test_split(
     inlets, oulets, test_size=0.2, random_state=42)
 
 # Correlation Matrix
-modelValues = inlets
-modelValues['popularity'] = oulets
-corr_df = modelValues.corr(method="pearson")
+modelValues = dataMusic[['popularity', 'acousticness', 'duration_ms',
+                         'danceability', 'energy', 'instrumentalness', 'loudness', 'music_genre', 'speechiness', 'valence', 'tempo', 'liveness']]
+modelValues['music_genre'] = modelValues['music_genre'].map(genres)
+modelValues['tempo'] = modelValues['tempo'].apply(
+    lambda x: tempoClassifier(x))
+modelValues = transformer.fit_transform(modelValues)
+modelValues = pd.DataFrame(modelValues, columns=['popularity', 'acousticness', 'duration_ms',
+                                                 'danceability', 'energy', 'instrumentalness', 'loudness', 'music_genre', 'speechiness', 'valence', 'tempo', 'liveness'])
+corrData = modelValues.corr(method="pearson")
 plt.figure(figsize=(8, 6))
-sns.heatmap(corr_df, annot=True)
+sns.heatmap(corrData, annot=True)
 plt.show()
 
 # Linear Regression model
